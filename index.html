@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#080b18">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080b18">
+<title>Snake offline</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080b18;color:white;
+ font-family:Arial,sans-serif;text-align:center;
+ padding:25px 15px;
+}
+h1{color:#35f2e5;font-size:30px}
+.card{
+ max-width:420px;margin:auto;padding:18px;
+ background:#121b30;border:1px solid #35f2e5;
+ border-radius:18px;
+}
+.stats{display:flex;justify-content:space-around;margin:15px}
+canvas{
+ width:100%;max-width:360px;
+ background:#07101e;border:1px solid #35f2e5;
+ border-radius:10px;touch-action:none;
+}
+button{
+ background:#35f2e5;color:#07101e;
+ border:0;border-radius:10px;
+ padding:13px 19px;margin:5px;
+ font-weight:bold;font-size:16px;
+}
+.controls{
+ display:grid;grid-template-columns:repeat(3,65px);
+ justify-content:center;margin-top:15px;
+}
+.controls button{padding:15px 5px}
+#message{color:#ff71dc;min-height:24px}
+</style>
+</head>
+<body>
+<h1>🐍 SNAKE OFFLINE</h1>
+<div class="card">
+ <div class="stats">
+  <span>PUNKTE: <b id="score">0</b></span>
+  <span>REKORD: <b id="best">0</b></span>
+ </div>
+ <canvas id="game" width="360" height="360"></canvas>
+ <p id="message">Bereit für eine Runde?</p>
+ <button onclick="start()">SPIEL STARTEN</button>
+ <div class="controls">
+  <span></span><button onclick="move(0,-1)">▲</button><span></span>
+  <button onclick="move(-1,0)">◀</button>
+  <button onclick="move(0,1)">▼</button>
+  <button onclick="move(1,0)">▶</button>
+ </div>
+</div>
+<script>
+const c=document.getElementById("game");
+const ctx=c.getContext("2d");
+const size=18, total=20;
+let snake,food,dir,next,score,timer,playing=false;
+let best=Number(localStorage.getItem("snakeBest")||0);
+document.getElementById("best").textContent=best;
+
+function reset(){
+ snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];
+ dir={x:1,y:0};next={x:1,y:0};
+ score=0;food=randomFood();updateScore();draw();
+}
+function randomFood(){
+ let p;
+ do{p={x:Math.floor(Math.random()*20),
+ y:Math.floor(Math.random()*20)}}
+ while(snake.some(s=>s.x===p.x&&s.y===p.y));
+ return p;
+}
+function updateScore(){
+ document.getElementById("score").textContent=score;
+ document.getElementById("best").textContent=best;
+}
+function start(){
+ clearInterval(timer);reset();playing=true;
+ document.getElementById("message").textContent="Viel Erfolg!";
+ timer=setInterval(tick,125);
+}
+function move(x,y){
+ if(!playing)return;
+ if(x===-dir.x&&y===-dir.y)return;
+ next={x,y};
+}
+function tick(){
+ dir=next;
+ let h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+ if(h.x<0||h.y<0||h.x>=20||h.y>=20||
+ snake.some(s=>s.x===h.x&&s.y===h.y)){
+ playing=false;clearInterval(timer);
+ document.getElementById("message").textContent="GAME OVER!";
+ return;
+ }
+ snake.unshift(h);
+ if(h.x===food.x&&h.y===food.y){
+ score+=10;food=randomFood();
+ if(score>best){best=score;localStorage.setItem("snakeBest",best)}
+ updateScore();
+ }else snake.pop();
+ draw();
+}
+function draw(){
+ ctx.fillStyle="#07101e";ctx.fillRect(0,0,360,360);
+ ctx.strokeStyle="#14263b";
+ for(let i=0;i<=20;i++){
+ ctx.beginPath();ctx.moveTo(i*18,0);
+ ctx.lineTo(i*18,360);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(0,i*18);
+ ctx.lineTo(360,i*18);ctx.stroke();
+ }
+ ctx.shadowBlur=15;ctx.shadowColor="#ff4fd8";
+ ctx.fillStyle="#ff4fd8";
+ ctx.beginPath();ctx.arc(food.x*18+9,food.y*18+9,7,0,7);ctx.fill();
+ ctx.shadowColor="#35f2e5";
+ snake.forEach((s,i)=>{
+ ctx.fillStyle=i===0?"#bafff7":"#35d9c9";
+ ctx.shadowBlur=12;
+ ctx.fillRect(s.x*18+2,s.y*18+2,14,14);
+ });
+ ctx.shadowBlur=0;
+}
+document.addEventListener("keydown",e=>{
+ const k={ArrowUp:[0,-1],ArrowDown:[0,1],
+ ArrowLeft:[-1,0],ArrowRight:[1,0]};
+ if(k[e.key])move(...k[e.key]);
+});
+let touch;
+c.addEventListener("touchstart",e=>{
+ touch={x:e.touches[0].clientX,y:e.touches[0].clientY};
+},{passive:true});
+c.addEventListener("touchend",e=>{
+ if(!touch)return;
+ let dx=e.changedTouches[0].clientX-touch.x;
+ let dy=e.changedTouches[0].clientY-touch.y;
+ if(Math.max(Math.abs(dx),Math.abs(dy))>15)
+ move(Math.abs(dx)>Math.abs(dy)?Math.sign(dx):0,
+ Math.abs(dy)>Math.abs(dx)?Math.sign(dy):0);
+ touch=null;
+},{passive:true});
+reset();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js");
+  });
+}
+</script>
+</body>
+</html>
