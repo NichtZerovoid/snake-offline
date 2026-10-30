@@ -1,0 +1,20 @@
+
+{
+  "name": "Snake offline",
+  "short_name": "Snake",
+  "description": "Ein futuristisches Snake-Spiel für unterwegs",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080b18",
+  "theme_color": "#080b18",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
